@@ -1,0 +1,66 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: school-management-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./storage:/var/www/html/storage
+    ports:
+      - "8000:80"
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=school_management
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=laravel_password
+    depends_on:
+      - mysql
+    networks:
+      - school-management-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: school-management-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: school_management
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: laravel_password
+      MYSQL_ROOT_PASSWORD: root_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - school-management-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: school-management-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: laravel
+      PMA_PASSWORD: laravel_password
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    networks:
+      - school-management-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  school-management-network:
+    driver: bridge
