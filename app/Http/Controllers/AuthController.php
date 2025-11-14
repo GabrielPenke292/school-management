@@ -28,11 +28,10 @@ class AuthController extends Controller
     {
         // Validação dos dados
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'username' => 'required|string',
             'password' => 'required|string|min:6',
         ], [
-            'email.required' => 'O campo e-mail é obrigatório.',
-            'email.email' => 'Por favor, insira um e-mail válido.',
+            'username.required' => 'O campo nome de usuário é obrigatório.',
             'password.required' => 'O campo senha é obrigatório.',
             'password.min' => 'A senha deve ter no mínimo 6 caracteres.',
         ]);
@@ -40,27 +39,24 @@ class AuthController extends Controller
         if ($validator->fails()) {
             return back()
                 ->withErrors($validator)
-                ->withInput($request->only('email'));
+                ->withInput($request->only('username'));
         }
 
-        // Credenciais
-        $credentials = $request->only('email', 'password');
-        $remember = $request->filled('remember');
+        // Busca o usuário pelo username
+        $user = \App\Models\User::where('username', $request->username)->first();
 
-        // Tentativa de autenticação
-        if (Auth::attempt($credentials, $remember)) {
+        // Verifica se o usuário existe e se a senha está correta
+        if ($user && \Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            Auth::login($user, $request->filled('remember'));
             $request->session()->regenerate();
 
-            // Redireciona baseado no role do usuário
-            $user = Auth::user();
-            
             return redirect()->intended(route('home.index'))->with('success', 'Login realizado com sucesso!');
         }
 
         // Se falhar, retorna com erro
         return back()
-            ->withInput($request->only('email'))
-            ->with('error', 'Credenciais inválidas. Verifique seu e-mail e senha.');
+            ->withInput($request->only('username'))
+            ->with('error', 'Credenciais inválidas. Verifique seu nome de usuário e senha.');
     }
 
     /**
